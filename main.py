@@ -33,6 +33,38 @@ def draw(board):
 draw(board)
 
 
+def clean_board(board):
+    for i in range(8):
+        for j in range(8):
+            if board[i][j] == "X":
+                board[i][j] = "_"
+    return board
+
+
+def choose_figure(player, board):
+    if player == "w":
+        figures = "prnbqk".upper()
+        name = "белых"
+    else:
+        figures = "prnbqk"
+        name = "чёрных"
+    a = input("Введите координату, где стоит фигура, которой вы хотите походить: ")
+    a = a.lower()
+    d = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
+    if a[0] not in d.keys() or 8 - int(a[1]) not in range(0,8):
+        print(f"На этой точке нет фигуры {name}")
+        raise ValueError
+    pos = [8 - int(a[1]), d[a[0]]]
+    if board[pos[0]][pos[1]] in figures:
+        return pos
+    else:
+        print(f"На этой точке нет фигуры {name}")
+        raise ValueError
+
+
+
+
+
 class MoveFigures:
     def __init__(self, position, player, big_list):
         self.position = position
@@ -49,12 +81,12 @@ class MoveFigures:
             for i in range(1, n):
                 if board[self.position[0] - i][self.position[1]] == "_":
                     board[self.position[0] - i][self.position[1]] = "X"
-                elif board[self.position[0] - 1][self.position[1] - 1] in "prnbq":
-                    board[self.position[0] - 1][self.position[1] - 1] = "X"
-                elif board[self.position[0] - 1][self.position[1] + 1] in "prnbq":
-                    board[self.position[0] - 1][self.position[1] + 1] = "X"
                 else:
                     break
+            if board[self.position[0] - 1][self.position[1] - 1] in "prnbqk":
+                board[self.position[0] - 1][self.position[1] - 1] = "X"
+            elif board[self.position[0] - 1][self.position[1] + 1] in "prnbqk":
+                board[self.position[0] - 1][self.position[1] + 1] = "X"
         elif self.player == "b" and self.position[0] in range(1, 7):
             if self.position[0] == 1:
                 n = 3
@@ -63,16 +95,12 @@ class MoveFigures:
             for i in range(1, n):
                 if board[self.position[0] + i][self.position[1]] == "_":
                     board[self.position[0] + i][self.position[1]] = "X"
-                elif (
-                    board[self.position[0] + 1][self.position[1] - 1] in "prnbq".upper()
-                ):
-                    board[self.position[0] + 1][self.position[1] - 1] = "X"
-                elif (
-                    board[self.position[0] + 1][self.position[1] + 1] in "prnbq".upper()
-                ):
-                    board[self.position[0] + 1][self.position[1] + 1] = "X"
                 else:
                     break
+            if board[self.position[0] + 1][self.position[1] - 1] in "prnbq".upper():
+                board[self.position[0] + 1][self.position[1] - 1] = "X"
+            elif board[self.position[0] + 1][self.position[1] + 1] in "prnbq".upper():
+                board[self.position[0] + 1][self.position[1] + 1] = "X"
         return board
 
     def rook(self, board=big_list[-1]):  # ладья
@@ -266,14 +294,14 @@ class MoveFigures:
             n = "N"
             b = "B"
             q = "Q"
-            k = 'k'
+            k = "k"
         else:
             p = "p"
             r = "r"
             n = "n"
             b = "b"
             q = "q"
-            k = 'K'
+            k = "K"
         for i in range(8):
             for j in range(8):
                 if board[i][j] == p:
@@ -307,8 +335,46 @@ class MoveFigures:
                         flag = 1
                         break
             if flag == 1:
-                break
+                return 1
+            else:
+                return 0
+
+    # def mat(self, board=big_list[-1]):
 
 
-# a = MoveFigures([7, 1], player, big_list)
-# draw(a.knight())
+# a = MoveFigures([6, 6], player, big_list)
+# draw(a.pawn())
+
+
+player_1 = 'w'
+player_2 = 'b'
+player = player_1
+
+
+for _ in range(10):
+    if player == 'w':
+        figuers = 'PRNBQK'
+    else:
+        figuers = 'PRNBQK'.lower()
+    try:
+        big_list[-1] = clean_board(big_list[-1])
+        pos = choose_figure(player, big_list[-1])
+        move = MoveFigures(pos, player, big_list)
+        if big_list[-1][pos[0]][pos[1]] == figuers[0]:
+            cross_board = move.pawn()
+        elif big_list[-1][pos[0]][pos[1]] == figuers[1]:
+            cross_board = move.rook()
+        elif big_list[-1][pos[0]][pos[1]] == figuers[2]:
+            cross_board = move.knight()
+        elif big_list[-1][pos[0]][pos[1]] == figuers[3]:
+            cross_board = move.bishop()
+        elif big_list[-1][pos[0]][pos[1]] == figuers[4]:
+            cross_board = move.queen()
+        elif big_list[-1][pos[0]][pos[1]] == figuers[5]:
+            cross_board = move.king()
+        draw(cross_board)
+        big_list.append([row[:] for row in clean_board(cross_board)])
+        player_1, player_2 = player_2, player_1
+        player = player_1
+    except ValueError:
+        continue
