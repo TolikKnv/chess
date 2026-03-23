@@ -67,7 +67,7 @@ class MoveFigures:
         self.position = position
         self.player = player
         self.big_list = big_list
-
+    
     def pawn(self, board=None):  # пешка
         if board is None:
             board = self.big_list[-1]
