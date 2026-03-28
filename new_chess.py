@@ -1,5 +1,12 @@
-import itertools
 import copy
+
+BOARD_SIZE = 8
+EMPTY_CELL = "_"
+MOVE_MARK = "X"
+CHESS_PIECES = "prnbqkcgz"
+WHITE_CHESS_PIECES = CHESS_PIECES.upper()
+BLACK_CHESS_PIECES = CHESS_PIECES
+FILES_TO_COL = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
 
 mode = input("Выберите режим: chess / checkers: ").strip().lower()
 
@@ -31,19 +38,19 @@ def draw(board):
 
 
 def clean_board(board):
-    for i in range(8):
-        for j in range(8):
-            if board[i][j] == "X":
-                board[i][j] = "_"
+    for i in range(BOARD_SIZE):
+        for j in range(BOARD_SIZE):
+            if board[i][j] == MOVE_MARK:
+                board[i][j] = EMPTY_CELL
     return board
 
 
 def choose_figure(player, board):
     if player == "w":
-        figures = "prnbqkcgz".upper()
+        figures = WHITE_CHESS_PIECES
         name = "белых"
     else:
-        figures = "prnbqkcgz"
+        figures = BLACK_CHESS_PIECES
         name = "чёрных"
 
     a = input(f"Ход {name}. Введите координату фигуры (или 'back N' для отката): ")
@@ -52,16 +59,23 @@ def choose_figure(player, board):
         return a.lower().split()
 
     a = a.lower()
-    d = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
-    if len(a) < 2 or a[0] not in d.keys() or 8 - int(a[1]) not in range(0, 8):
+    if (
+        len(a) < 2
+        or a[0] not in FILES_TO_COL.keys()
+        or BOARD_SIZE - int(a[1]) not in range(0, BOARD_SIZE)
+    ):
         print("Некорректный ввод")
         raise ValueError
-    pos = [8 - int(a[1]), d[a[0]]]
+    pos = [BOARD_SIZE - int(a[1]), FILES_TO_COL[a[0]]]
     if board[pos[0]][pos[1]] in figures:
         return pos
     else:
         print(f"На этой точке нет фигуры {name}")
         raise ValueError
+
+
+def _is_on_board(row, col):
+    return 0 <= row <= BOARD_SIZE - 1 and 0 <= col <= BOARD_SIZE - 1
 
 
 class MoveFigures:
@@ -70,74 +84,40 @@ class MoveFigures:
         self.player = player
         self.big_list = big_list
 
-    def camel(self, board=None):
+    def _resolve_board(self, board):
         if board is None:
-            board = self.big_list[-1]
-
-        if self.player == "w":
-            own = "prnbqkcgz".upper()
-            kill = "prnbqkcgz"
-        else:
-            own = "prnbqkcgz"
-            kill = "PRNBQKCGZ"
-
-        moves = [(3,1),(3,-1),(-3,1),(-3,-1),(1,3),(1,-3),(-1,3),(-1,-3)]
-
-        for dr, dc in moves:
-            r = self.position[0] + dr
-            c = self.position[1] + dc
-
-            if 0 <= r <= 7 and 0 <= c <= 7:
-                if board[r][c] not in own:
-                    board[r][c] = "X"
-
+            return self.big_list[-1]
         return board
+
+    def _piece_sets(self):
+        if self.player == "w":
+            return WHITE_CHESS_PIECES, BLACK_CHESS_PIECES
+        return BLACK_CHESS_PIECES, WHITE_CHESS_PIECES
+
+    def _mark_jump_moves(self, board, moves):
+        own, _ = self._piece_sets()
+        for dr, dc in moves:
+            row = self.position[0] + dr
+            col = self.position[1] + dc
+            if _is_on_board(row, col):
+                if board[row][col] not in own:
+                    board[row][col] = MOVE_MARK
+        return board
+
+    def camel(self, board=None):
+        board = self._resolve_board(board)
+        moves = [(3, 1), (3, -1), (-3, 1), (-3, -1), (1, 3), (1, -3), (-1, 3), (-1, -3)]
+        return self._mark_jump_moves(board, moves)
 
     def zebra(self, board=None):
-        if board is None:
-            board = self.big_list[-1]
-
-        if self.player == "w":
-            own = "prnbqkcgz".upper()
-            kill = "prnbqkcgz"
-        else:
-            own = "prnbqkcgz"
-            kill = "PRNBQKCGZ"
-
-        moves = [(3,2),(3,-2),(-3,2),(-3,-2),(2,3),(2,-3),(-2,3),(-2,-3)]
-
-        for dr, dc in moves:
-            r = self.position[0] + dr
-            c = self.position[1] + dc
-
-            if 0 <= r <= 7 and 0 <= c <= 7:
-                if board[r][c] not in own:
-                    board[r][c] = "X"
-
-        return board
+        board = self._resolve_board(board)
+        moves = [(3, 2), (3, -2), (-3, 2), (-3, -2), (2, 3), (2, -3), (-2, 3), (-2, -3)]
+        return self._mark_jump_moves(board, moves)
 
     def giraffe(self, board=None):
-        if board is None:
-            board = self.big_list[-1]
-
-        if self.player == "w":
-            own = "prnbqkcgz".upper()
-            kill = "prnbqkcgz"
-        else:
-            own = "prnbqkcgz"
-            kill = "PRNBQKCGZ"
-
-        moves = [(4,1),(4,-1),(-4,1),(-4,-1),(1,4),(1,-4),(-1,4),(-1,-4)]
-
-        for dr, dc in moves:
-            r = self.position[0] + dr
-            c = self.position[1] + dc
-
-            if 0 <= r <= 7 and 0 <= c <= 7:
-                if board[r][c] not in own:
-                    board[r][c] = "X"
-
-        return board
+        board = self._resolve_board(board)
+        moves = [(4, 1), (4, -1), (-4, 1), (-4, -1), (1, 4), (1, -4), (-1, 4), (-1, -4)]
+        return self._mark_jump_moves(board, moves)
 
     def pawn(self, board=None):  # пешка
         if board is None:
@@ -185,57 +165,56 @@ class MoveFigures:
         return board
 
     def rook(self, board=None):  # ладья
-        if board is None:
-            board = self.big_list[-1]
+        board = self._resolve_board(board)
         if self.player == "w":
-            own = "prnbqkcgz".upper()
-            kill = "prnbqkcgz"
+            own = WHITE_CHESS_PIECES
+            kill = BLACK_CHESS_PIECES
         elif self.player == "b":
-            own = "prnbqkcgz"
-            kill = "prnbqkcgz".upper()
+            own = BLACK_CHESS_PIECES
+            kill = WHITE_CHESS_PIECES
 
-        for i in range(1, 8):
+        for i in range(1, BOARD_SIZE):
             if self.position[0] - i >= 0:
-                if board[self.position[0] - i][self.position[1]] == "_":
-                    board[self.position[0] - i][self.position[1]] = "X"
+                if board[self.position[0] - i][self.position[1]] == EMPTY_CELL:
+                    board[self.position[0] - i][self.position[1]] = MOVE_MARK
                 elif board[self.position[0] - i][self.position[1]] in kill:
-                    board[self.position[0] - i][self.position[1]] = "X"
+                    board[self.position[0] - i][self.position[1]] = MOVE_MARK
                     break
                 elif board[self.position[0] - i][self.position[1]] in own:
                     break
             else:
                 break
 
-        for i in range(1, 8):
-            if self.position[0] + i <= 7:
-                if board[self.position[0] + i][self.position[1]] == "_":
-                    board[self.position[0] + i][self.position[1]] = "X"
+        for i in range(1, BOARD_SIZE):
+            if self.position[0] + i <= BOARD_SIZE - 1:
+                if board[self.position[0] + i][self.position[1]] == EMPTY_CELL:
+                    board[self.position[0] + i][self.position[1]] = MOVE_MARK
                 elif board[self.position[0] + i][self.position[1]] in kill:
-                    board[self.position[0] + i][self.position[1]] = "X"
+                    board[self.position[0] + i][self.position[1]] = MOVE_MARK
                     break
                 elif board[self.position[0] + i][self.position[1]] in own:
                     break
             else:
                 break
 
-        for i in range(1, 8):
+        for i in range(1, BOARD_SIZE):
             if self.position[1] - i >= 0:
-                if board[self.position[0]][self.position[1] - i] == "_":
-                    board[self.position[0]][self.position[1] - i] = "X"
+                if board[self.position[0]][self.position[1] - i] == EMPTY_CELL:
+                    board[self.position[0]][self.position[1] - i] = MOVE_MARK
                 elif board[self.position[0]][self.position[1] - i] in kill:
-                    board[self.position[0]][self.position[1] - i] = "X"
+                    board[self.position[0]][self.position[1] - i] = MOVE_MARK
                     break
                 elif board[self.position[0]][self.position[1] - i] in own:
                     break
             else:
                 break
 
-        for i in range(1, 8):
-            if self.position[1] + i <= 7:
-                if board[self.position[0]][self.position[1] + i] == "_":
-                    board[self.position[0]][self.position[1] + i] = "X"
+        for i in range(1, BOARD_SIZE):
+            if self.position[1] + i <= BOARD_SIZE - 1:
+                if board[self.position[0]][self.position[1] + i] == EMPTY_CELL:
+                    board[self.position[0]][self.position[1] + i] = MOVE_MARK
                 elif board[self.position[0]][self.position[1] + i] in kill:
-                    board[self.position[0]][self.position[1] + i] = "X"
+                    board[self.position[0]][self.position[1] + i] = MOVE_MARK
                     break
                 elif board[self.position[0]][self.position[1] + i] in own:
                     break
@@ -244,24 +223,22 @@ class MoveFigures:
         return board
 
     def bishop(self, board=None):  # слон
-        if board is None:
-            board = self.big_list[-1]
-
+        board = self._resolve_board(board)
         if self.player == "w":
-            own = "prnbqkcgz".upper()
-            kill = "prnbqkcgz"
+            own = WHITE_CHESS_PIECES
+            kill = BLACK_CHESS_PIECES
         elif self.player == "b":
-            own = "prnbqkcgz"
-            kill = "prnbqkcgz".upper()
+            own = BLACK_CHESS_PIECES
+            kill = WHITE_CHESS_PIECES
         directions = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
         for d in directions:
-            for i in range(1, 8):
+            for i in range(1, BOARD_SIZE):
                 r, c = self.position[0] + d[0] * i, self.position[1] + d[1] * i
-                if 0 <= r <= 7 and 0 <= c <= 7:
-                    if board[r][c] == "_":
-                        board[r][c] = "X"
+                if _is_on_board(r, c):
+                    if board[r][c] == EMPTY_CELL:
+                        board[r][c] = MOVE_MARK
                     elif board[r][c] in kill:
-                        board[r][c] = "X"
+                        board[r][c] = MOVE_MARK
                         break
                     elif board[r][c] in own:
                         break
@@ -270,58 +247,45 @@ class MoveFigures:
         return board
 
     def knight(self, board=None):  # конь
-        if board is None:
-            board = self.big_list[-1]
-        if self.player == "w":
-            own = "prnbqkcgz".upper()
-        elif self.player == "b":
-            own = "prnbqkcgz"
-
+        board = self._resolve_board(board)
         moves = [(-2, -1), (-2, 1), (-1, 2), (1, 2), (2, 1), (2, -1), (1, -2), (-1, -2)]
-        for m in moves:
-            r, c = self.position[0] + m[0], self.position[1] + m[1]
-            if 0 <= r <= 7 and 0 <= c <= 7:
-                if board[r][c] not in own:
-                    board[r][c] = "X"
+        if self.player == "w":
+            own = WHITE_CHESS_PIECES
+        elif self.player == "b":
+            own = BLACK_CHESS_PIECES
+        for dr, dc in moves:
+            row = self.position[0] + dr
+            col = self.position[1] + dc
+            if _is_on_board(row, col):
+                if board[row][col] not in own:
+                    board[row][col] = MOVE_MARK
         return board
 
     def queen(self, board=None):  # королева
-        if board is None:
-            board = self.big_list[-1]
+        board = self._resolve_board(board)
         return self.bishop(self.rook(board))
 
     def king(self, board=None):  # король
-        if board is None:
-            board = self.big_list[-1]
-        if self.player == "w":
-            own = "prnbqkcgz".upper()
-        else:
-            own = "prnbqkcgz"
+        board = self._resolve_board(board)
 
         moves = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
-        for m in moves:
-            r, c = self.position[0] + m[0], self.position[1] + m[1]
-            if 0 <= r <= 7 and 0 <= c <= 7:
-                if board[r][c] not in own:
-                    board[r][c] = "X"
-        return board
+        return self._mark_jump_moves(board, moves)
 
     def shah(self, board=None):
-        if board is None:
-            board = self.big_list[-1]
+        board = self._resolve_board(board)
 
         if self.player == "w":
             target_king = "K"
             kill_color = "b"
-            kill_pieces = "prnbqkcgz"
+            kill_pieces = BLACK_CHESS_PIECES
         else:
             target_king = "k"
             kill_color = "w"
-            kill_pieces = "prnbqkcgz".upper()
+            kill_pieces = WHITE_CHESS_PIECES
 
         king_pos = None
-        for i in range(8):
-            for j in range(8):
+        for i in range(BOARD_SIZE):
+            for j in range(BOARD_SIZE):
                 if board[i][j] == target_king:
                     king_pos = (i, j)
                     break
@@ -329,51 +293,53 @@ class MoveFigures:
         if not king_pos:
             return 1
 
-        for i in range(8):
-            for j in range(8):
+        for i in range(BOARD_SIZE):
+            for j in range(BOARD_SIZE):
                 piece = board[i][j]
                 if piece in kill_pieces:
                     temp_board = [row[:] for row in board]
                     attacker = MoveFigures([i, j], kill_color, [temp_board])
+                    attack_board = get_moves_board_for_piece(attacker, piece, temp_board)
 
-                    attack_board = []
-                    if piece.lower() == "p":
-                        attack_board = attacker.pawn(temp_board)
-                    elif piece.lower() == "r":
-                        attack_board = attacker.rook(temp_board)
-                    elif piece.lower() == "n":
-                        attack_board = attacker.knight(temp_board)
-                    elif piece.lower() == "b":
-                        attack_board = attacker.bishop(temp_board)
-                    elif piece.lower() == "q":
-                        attack_board = attacker.queen(temp_board)
-                    elif piece.lower() == "k":
-                        attack_board = attacker.king(temp_board)
-                    elif piece.lower() == "c":
-                        attack_board = attacker.camel(temp_board)
-                    elif piece.lower() == "z":
-                        attack_board = attacker.zebra(temp_board)
-                    elif piece.lower() == "g":
-                        attack_board = attacker.giraffe(temp_board)
-
-                    if attack_board[king_pos[0]][king_pos[1]] == "X":
+                    if attack_board[king_pos[0]][king_pos[1]] == MOVE_MARK:
                         return 1
         return 0
+
+
+def get_moves_board_for_piece(mover, piece, board):
+    method_by_piece = {
+        "p": mover.pawn,
+        "r": mover.rook,
+        "n": mover.knight,
+        "b": mover.bishop,
+        "q": mover.queen,
+        "k": mover.king,
+        "z": mover.zebra,
+        "c": mover.camel,
+        "g": mover.giraffe,
+    }
+    move_method = method_by_piece.get(piece.lower())
+    if move_method is None:
+        return []
+    return move_method(board)
 
 
 def step(big_list, cross_board, pos):
     a = input("Введите координату, на которую хотите сходить: ")
     a = a.lower()
-    d = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
-    if len(a) < 2 or a[0] not in d.keys() or 8 - int(a[1]) not in range(0, 8):
+    if (
+        len(a) < 2
+        or a[0] not in FILES_TO_COL.keys()
+        or BOARD_SIZE - int(a[1]) not in range(0, BOARD_SIZE)
+    ):
         print("Выбранная фигура не может походить в эту клетку")
         raise ValueError
-    new_pos = [8 - int(a[1]), d[a[0]]]
+    new_pos = [BOARD_SIZE - int(a[1]), FILES_TO_COL[a[0]]]
 
-    if cross_board[new_pos[0]][new_pos[1]] == "X":
+    if cross_board[new_pos[0]][new_pos[1]] == MOVE_MARK:
         new_board = copy.deepcopy(big_list[-1])
         new_board[new_pos[0]][new_pos[1]] = cross_board[pos[0]][pos[1]]
-        new_board[pos[0]][pos[1]] = "_"
+        new_board[pos[0]][pos[1]] = EMPTY_CELL
         big_list.append(new_board)
         return new_board
     else:
@@ -389,41 +355,23 @@ def mat(player, big_list):
     print(f"ШАХ игроку {player}!")
 
     current_board = big_list[-1]
-    my_figure = "prnbqkcgz".upper() if player == "w" else "prnbqkcgz".lower()
+    my_figure = WHITE_CHESS_PIECES if player == "w" else BLACK_CHESS_PIECES
 
-    for i in range(8):
-        for j in range(8):
+    for i in range(BOARD_SIZE):
+        for j in range(BOARD_SIZE):
             if current_board[i][j] in my_figure:
                 temp_board_for_moves = clean_board(copy.deepcopy(current_board))
                 mover = MoveFigures([i, j], player, [temp_board_for_moves])
+                moves_board = get_moves_board_for_piece(
+                    mover, current_board[i][j], temp_board_for_moves
+                )
 
-                figure_type = current_board[i][j].lower()
-                moves_board = []
-                if figure_type == "p":
-                    moves_board = mover.pawn(temp_board_for_moves)
-                elif figure_type == "r":
-                    moves_board = mover.rook(temp_board_for_moves)
-                elif figure_type == "n":
-                    moves_board = mover.knight(temp_board_for_moves)
-                elif figure_type == "b":
-                    moves_board = mover.bishop(temp_board_for_moves)
-                elif figure_type == "q":
-                    moves_board = mover.queen(temp_board_for_moves)
-                elif figure_type == "k":
-                    moves_board = mover.king(temp_board_for_moves)
-                elif figure_type == "z":
-                    moves_board = mover.zebra(temp_board_for_moves)
-                elif figure_type == "c":
-                    moves_board = mover.camel(temp_board_for_moves)
-                elif figure_type == "g":
-                    moves_board = mover.giraffe(temp_board_for_moves)
-
-                for r in range(8):
-                    for c in range(8):
-                        if moves_board[r][c] == "X":
+                for r in range(BOARD_SIZE):
+                    for c in range(BOARD_SIZE):
+                        if moves_board[r][c] == MOVE_MARK:
                             simulated_board = copy.deepcopy(current_board)
                             simulated_board[r][c] = simulated_board[i][j]
-                            simulated_board[i][j] = "_"
+                            simulated_board[i][j] = EMPTY_CELL
                             checker = MoveFigures([0, 0], player, [simulated_board])
                             if checker.shah(simulated_board) == 0:
 
@@ -450,15 +398,15 @@ def back_move(big_list, n):
 
 # шашки
 def create_checkers_board():
-    board = [["_"] * 8 for _ in range(8)]
+    board = [[EMPTY_CELL] * BOARD_SIZE for _ in range(BOARD_SIZE)]
 
     for i in range(3):
-        for j in range(8):
+        for j in range(BOARD_SIZE):
             if (i + j) % 2 == 1:
                 board[i][j] = "b"
 
-    for i in range(5, 8):
-        for j in range(8):
+    for i in range(BOARD_SIZE - 3, BOARD_SIZE):
+        for j in range(BOARD_SIZE):
             if (i + j) % 2 == 1:
                 board[i][j] = "w"
 
@@ -474,13 +422,18 @@ def choose_checker(player, board):
     a = input("Введите координату шашки: ")
     a = a.lower()
 
-    d = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
-    pos = [8 - int(a[1]), d[a[0]]]
+    pos = [BOARD_SIZE - int(a[1]), FILES_TO_COL[a[0]]]
 
     if board[pos[0]][pos[1]] in figures:
         return pos
     else:
         raise ValueError
+
+
+def _get_checkers_enemy(player):
+    if player == "w":
+        return "bB"
+    return "wW"
 
 
 def checkers_moves(pos, player, board):
@@ -495,7 +448,7 @@ def checkers_moves(pos, player, board):
     else:  # дамка
         directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
 
-    enemy = "bB" if player == "w" else "wW"
+    enemy = _get_checkers_enemy(player)
 
     can_capture = False
 
@@ -506,9 +459,9 @@ def checkers_moves(pos, player, board):
         r2 = i + 2 * dr
         c2 = j + 2 * dc
 
-        if 0 <= r2 <= 7 and 0 <= c2 <= 7:
-            if board[r1][c1] in enemy and board[r2][c2] == "_":
-                board[r2][c2] = "X"
+        if _is_on_board(r2, c2):
+            if board[r1][c1] in enemy and board[r2][c2] == EMPTY_CELL:
+                board[r2][c2] = MOVE_MARK
                 can_capture = True
 
     # если есть рубка — обычные ходы запрещены
@@ -519,9 +472,9 @@ def checkers_moves(pos, player, board):
     for dr, dc in directions:
         r = i + dr
         c = j + dc
-        if 0 <= r <= 7 and 0 <= c <= 7:
-            if board[r][c] == "_":
-                board[r][c] = "X"
+        if _is_on_board(r, c):
+            if board[r][c] == EMPTY_CELL:
+                board[r][c] = MOVE_MARK
 
     return board
 
@@ -536,7 +489,7 @@ def has_capture_from(pos, player, board):
     else:  # дамка
         directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
 
-    enemy = "bB" if player == "w" else "wW"
+    enemy = _get_checkers_enemy(player)
 
     for dr, dc in directions:
         r1 = i + dr
@@ -544,8 +497,8 @@ def has_capture_from(pos, player, board):
         r2 = i + 2 * dr
         c2 = j + 2 * dc
 
-        if 0 <= r2 <= 7 and 0 <= c2 <= 7:
-            if board[r1][c1] in enemy and board[r2][c2] == "_":
+        if _is_on_board(r2, c2):
+            if board[r1][c1] in enemy and board[r2][c2] == EMPTY_CELL:
                 return True
 
     return False
@@ -557,11 +510,6 @@ if mode == "chess":
     player = player_1
     draw(board)
     while True:
-        if player == "w":
-            figuers = "prnbqkcgz".upper()
-        else:
-            figuers = "prnbqkcgz".lower()
-
         try:
             if mat(player, big_list):
                 print(f"МАТ! Победил игрок {'ЧЕРНЫЕ' if player == 'w' else 'БЕЛЫЕ'}!")
@@ -591,26 +539,9 @@ if mode == "chess":
 
             move = MoveFigures(pos, player, big_list)
             piece_char = big_list[-1][pos[0]][pos[1]]
-
-            cross_board = []
-            if piece_char.lower() == "p":
-                cross_board = move.pawn(copy.deepcopy(big_list[-1]))
-            elif piece_char.lower() == "r":
-                cross_board = move.rook(copy.deepcopy(big_list[-1]))
-            elif piece_char.lower() == "n":
-                cross_board = move.knight(copy.deepcopy(big_list[-1]))
-            elif piece_char.lower() == "b":
-                cross_board = move.bishop(copy.deepcopy(big_list[-1]))
-            elif piece_char.lower() == "q":
-                cross_board = move.queen(copy.deepcopy(big_list[-1]))
-            elif piece_char.lower() == "k":
-                cross_board = move.king(copy.deepcopy(big_list[-1]))
-            elif piece_char.lower() == "c":
-                cross_board = move.camel(copy.deepcopy(big_list[-1]))
-            elif piece_char.lower() == "g":
-                cross_board = move.giraffe(copy.deepcopy(big_list[-1]))
-            elif piece_char.lower() == "z":
-                cross_board = move.zebra(copy.deepcopy(big_list[-1]))
+            cross_board = get_moves_board_for_piece(
+                move, piece_char, copy.deepcopy(big_list[-1])
+            )
 
             draw(cross_board)
 
